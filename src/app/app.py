@@ -5,12 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.app.config.app_config import AppConfig
+from src.app.shared.infrastructure.middleware.request_logging_middleware import (
+    request_logging_middleware,
+)
 from src.app.shared.infrastructure.rate_limit.rate_limiter import limiter
-from src.app.shared.logging.correlation import CorrelationIdMiddleware
-from src.app.shared.logging.logger import setup_logging
-from src.app.shared.logging.config import load_logging_config
+from src.app.shared.logging.logging import initialize_logging
 from src.app.shared.presentation.exception_handlers import register_exception_handlers
 from src.app.shared.presentation.health_checks import register_health_endpoints
 from src.app.shared.presentation.router_registry import register_routers
@@ -22,7 +24,10 @@ app_version = config.get_config("app.version", "1.0.0")
 ENV = os.getenv("APP_ENV", "local")
 
 # Setup logging
-setup_logging(load_logging_config())
+initialize_logging(
+    level=config.get_config("logging.level", "INFO"),
+    format_type=config.get_config("logging.format", "json"),
+)
 
 # ── App ───────────────────────────────────────────────────────────
 fastapi_app = FastAPI(title=app_name, version=app_version)
@@ -51,10 +56,11 @@ fastapi_app.state.limiter = limiter
 fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 fastapi_app.add_middleware(SlowAPIMiddleware)
 
-# Request tracing via correlation IDs
-fastapi_app.add_middleware(CorrelationIdMiddleware)
-
-# TODO (follow-up): add RequestLoggingMiddleware
+# Request logging
+fastapi_app.add_middleware(
+    BaseHTTPMiddleware,
+    dispatch=request_logging_middleware,
+)
 
 # Register exception handlers (404, 409, 422, 429, 500, etc.)
 register_exception_handlers(fastapi_app)

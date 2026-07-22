@@ -10,7 +10,9 @@ from src.app.features.user.domain.exceptions.user_exceptions import (
 )
 from src.app.features.user.domain.repositories.user_repository import UserRepository
 from src.app.shared.domain.value_objects.entity_id import EntityId
-from src.app.shared.utils.log_util import log
+from src.app.shared.logging import get_logger
+
+log = get_logger(__name__)
 
 
 class UpdateUserByIdUseCase:

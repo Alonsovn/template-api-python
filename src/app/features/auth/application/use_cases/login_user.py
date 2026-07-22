@@ -14,7 +14,7 @@ from src.app.shared.infrastructure.security.account_lockout_service import (
 )
 from src.app.shared.infrastructure.security.jwt_handler import JWTHandler
 from src.app.shared.domain.value_objects.password import Password
-from src.app.shared.logging import BusinessLogger, get_logger, mask_email
+from src.app.shared.logging import get_logger, mask_email
 
 
 class LoginUserUseCase:
@@ -47,7 +47,7 @@ class LoginUserUseCase:
             InvalidCredentialsError: If credentials are invalid
         """
         email_lower = str(payload.email).lower().strip()
-        log = BusinessLogger(get_logger(__name__), user_id=email_lower)
+        log = get_logger(__name__)
         is_locked = await self.lockout_service.is_locked_out(email_lower)
         if is_locked:
             lockout_info = await self.lockout_service.get_lockout_info(email_lower)
@@ -63,10 +63,9 @@ class LoginUserUseCase:
             )
 
             log.warning(
-                "Login attempt for locked account",
-                event_type="auth.login.account_locked",
-                email=mask_email(email_lower),
-                remaining_seconds=remaining_seconds,
+                f"Login attempt for locked account: "
+                f"email={mask_email(email_lower)}, "
+                f"remaining_seconds={remaining_seconds}"
             )
             raise AccountLockedError(
                 message=f"Account temporarily locked. Try again in {remaining_minutes} minutes.",
@@ -79,9 +78,8 @@ class LoginUserUseCase:
 
             if not user_entity:
                 log.warning(
-                    "Login attempt with non-existent email",
-                    event_type="auth.login.user_not_found",
-                    email=mask_email(email_lower),
+                    f"Login attempt with non-existent email: "
+                    f"{mask_email(email_lower)}"
                 )
                 # Record attempts for non-existent users to prevent timing-based user enumeration
                 await self.lockout_service.record_failed_attempt(email_lower)
@@ -98,11 +96,10 @@ class LoginUserUseCase:
                 )
 
                 log.warning(
-                    "Failed login attempt - invalid password",
-                    event_type="auth.login.invalid_credentials",
-                    user_id=str(user_entity.id),
-                    email=mask_email(email_lower),
-                    failed_attempts=failed_attempts + 1,
+                    f"Failed login attempt — invalid password: "
+                    f"user_id={user_entity.id}, "
+                    f"email={mask_email(email_lower)}, "
+                    f"failed_attempts={failed_attempts + 1}"
                 )
                 await self.lockout_service.record_failed_attempt(email_lower)
                 raise InvalidCredentialsError()
@@ -110,10 +107,9 @@ class LoginUserUseCase:
             # Check if account is active
             if not user_entity.is_active:
                 log.warning(
-                    "Login attempt on inactive account",
-                    event_type="auth.login.inactive_account",
-                    user_id=str(user_entity.id),
-                    email=mask_email(email_lower),
+                    f"Login attempt on inactive account: "
+                    f"user_id={user_entity.id}, "
+                    f"email={mask_email(email_lower)}"
                 )
                 raise InvalidCredentialsError("Account is inactive")
 
@@ -139,11 +135,10 @@ class LoginUserUseCase:
             )
 
             log.info(
-                "User logged in successfully",
-                event_type="auth.login.success",
-                user_id=str(user_entity.id),
-                email=mask_email(email_lower),
-                role=user_entity.role.value,
+                f"User logged in successfully: "
+                f"user_id={user_entity.id}, "
+                f"email={mask_email(email_lower)}, "
+                f"role={user_entity.role.value}"
             )
 
             return response
@@ -151,9 +146,5 @@ class LoginUserUseCase:
         except (InvalidCredentialsError, AccountLockedError):
             raise
         except Exception as e:
-            log.error(
-                "Unexpected error during login",
-                error=e,
-                error_type="auth.login.unexpected_error",
-            )
+            log.error(f"Unexpected error during login: {e}")
             raise

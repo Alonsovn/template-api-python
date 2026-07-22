@@ -1,8 +1,6 @@
 fastapi==0.115.11
 uvicorn==0.34.0
 pydantic==2.10.6
-email-validator==2.2.0
-aiosmtplib==4.0.0
 python-dotenv==1.0.1
 SQLAlchemy==2.0.39
 asyncpg==0.30.0

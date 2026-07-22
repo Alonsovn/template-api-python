@@ -17,7 +17,9 @@ from src.app.shared.domain.value_objects.entity_id import EntityId
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.shared.utils.log_util import log
+from src.app.shared.logging import get_logger
+
+log = get_logger(__name__)
 
 
 class DatabaseConnectionError(Exception):

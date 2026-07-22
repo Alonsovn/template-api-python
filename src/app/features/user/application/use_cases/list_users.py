@@ -4,7 +4,9 @@ from src.app.features.user.application.mappers.user_dto_mapper import (
 )
 from src.app.features.user.domain.repositories.user_repository import UserRepository
 from src.app.shared.application.dtos.pagination_dto import PaginatedResponse
-from src.app.shared.utils.log_util import log
+from src.app.shared.logging import get_logger
+
+log = get_logger(__name__)
 
 
 class ListUsersUseCase:

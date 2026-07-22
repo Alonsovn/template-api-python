@@ -12,7 +12,7 @@ from src.app.features.auth.domain.exceptions.auth_exceptions import (
 from src.app.features.user.domain.repositories.user_repository import UserRepository
 from src.app.shared.domain.value_objects.entity_id import EntityId
 from src.app.shared.domain.value_objects.password import Password
-from src.app.shared.logging import BusinessLogger, get_logger
+from src.app.shared.logging import get_logger
 
 
 class ChangePasswordUseCase:
@@ -40,7 +40,7 @@ class ChangePasswordUseCase:
             InvalidCredentialsError: If current password is wrong
             ValueError: If new password fails validation
         """
-        log = BusinessLogger(get_logger(__name__), user_id=user_id)
+        log = get_logger(__name__)
 
         try:
             entity_id = EntityId.from_string(user_id)
@@ -48,16 +48,14 @@ class ChangePasswordUseCase:
 
             if not user_entity:
                 log.warning(
-                    "Change password attempt for non-existent user",
-                    event_type="auth.change_password.user_not_found",
+                    "Change password attempt for non-existent user"
                 )
                 raise InvalidCredentialsError("User not found")
 
             # Verify current password
             if not Password.verify(payload.current_password, user_entity.password_hash):
                 log.warning(
-                    "Change password failed — current password incorrect",
-                    event_type="auth.change_password.invalid_current",
+                    "Change password failed — current password incorrect"
                 )
                 raise InvalidCredentialsError("Current password is incorrect")
 
@@ -66,18 +64,11 @@ class ChangePasswordUseCase:
             user_entity.update_details(password_hash=new_password_hash)
             await self.user_repository.update(user_entity)
 
-            log.info(
-                "Password changed successfully",
-                event_type="auth.change_password.success",
-            )
+            log.info("Password changed successfully")
             return ChangePasswordResponse(message="Password changed successfully")
 
         except (InvalidCredentialsError, ValueError):
             raise
         except Exception as e:
-            log.error(
-                "Unexpected error in ChangePasswordUseCase",
-                error=e,
-                error_type="auth.change_password.unexpected_error",
-            )
+            log.error(f"Unexpected error in ChangePasswordUseCase: {e}")
             raise

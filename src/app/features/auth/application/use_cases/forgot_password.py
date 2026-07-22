@@ -7,7 +7,9 @@ from src.app.config.app_config import AppConfig
 from src.app.features.auth.application.dtos.auth_dto import ForgotPasswordResponse
 from src.app.features.user.domain.repositories.user_repository import UserRepository
 from src.app.shared.domain.value_objects.email import Email
-from src.app.shared.utils.log_util import log
+from src.app.shared.logging import get_logger
+
+log = get_logger(__name__)
 
 
 class ForgotPasswordUseCase:

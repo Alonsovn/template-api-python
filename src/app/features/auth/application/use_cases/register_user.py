@@ -18,7 +18,7 @@ from src.app.features.user.domain.exceptions.user_exceptions import (
 from src.app.features.user.domain.repositories.user_repository import UserRepository
 from src.app.shared.infrastructure.security.jwt_handler import JWTHandler
 from src.app.shared.domain.value_objects.password import Password
-from src.app.shared.logging import BusinessLogger, get_logger
+from src.app.shared.logging import get_logger
 
 
 class RegisterUserUseCase:
@@ -47,7 +47,7 @@ class RegisterUserUseCase:
             UserAlreadyExistsError: If email already exists
             ValueError: If validation fails
         """
-        log = BusinessLogger(get_logger(__name__), user_id=str(payload.email))
+        log = get_logger(__name__)
 
         try:
             password_hash = Password(payload.password).hash()
@@ -61,9 +61,8 @@ class RegisterUserUseCase:
 
             if existing_user:
                 log.warning(
-                    "Registration attempt with existing email",
-                    event_type="auth.register.email_exists",
-                    email=str(new_user_entity.email),
+                    f"Registration attempt with existing email: "
+                    f"{new_user_entity.email}"
                 )
                 raise UserAlreadyExistsError(str(new_user_entity.email))
 
@@ -72,9 +71,8 @@ class RegisterUserUseCase:
             # Handle race condition where another request created the user between check and save
             if created_user is None:
                 log.warning(
-                    "Race condition during registration",
-                    event_type="auth.register.race_condition",
-                    email=str(new_user_entity.email),
+                    f"Race condition during registration: "
+                    f"{new_user_entity.email}"
                 )
                 raise UserAlreadyExistsError(str(new_user_entity.email))
 
@@ -98,18 +96,12 @@ class RegisterUserUseCase:
             )
 
             log.info(
-                "User registered successfully",
-                event_type="auth.register.success",
-                user_id=str(created_user.id.value),
+                f"User registered successfully: user_id={created_user.id.value}"
             )
             return response
 
         except (ValueError, UserAlreadyExistsError):
             raise
         except Exception as e:
-            log.error(
-                "Unexpected error in RegisterUserUseCase",
-                error=e,
-                error_type="auth.register.unexpected_error",
-            )
+            log.error(f"Unexpected error in RegisterUserUseCase: {e}")
             raise
